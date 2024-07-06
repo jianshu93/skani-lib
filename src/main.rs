@@ -1,4 +1,4 @@
-use clap::{arg, Command, ArgAction};
+use clap::{Command, ArgAction, Arg};
 use rayon::prelude::*;
 use skani::chain;
 use skani::file_io;
@@ -10,8 +10,8 @@ use std::sync::{Arc, Mutex};
 
 fn default_params(mode: Mode) -> (Arc<CommandParams>, Arc<SketchParams>) {
     let cmd_params = Arc::new(CommandParams {
-        screen: false,
-        screen_val: 0.00,
+        screen: true,
+        screen_val: 75.00,
         mode: mode,
         out_file_name: "".to_string(),
         ref_files: vec![],
@@ -25,7 +25,7 @@ fn default_params(mode: Mode) -> (Arc<CommandParams>, Arc<SketchParams>) {
         max_results: 10000000,
         individual_contig_q: false,
         individual_contig_r: false,
-        min_aligned_frac: 0.15,
+        min_aligned_frac: 0.10,
         keep_refs: false,
         est_ci: false,
         learned_ani: true,
@@ -34,25 +34,43 @@ fn default_params(mode: Mode) -> (Arc<CommandParams>, Arc<SketchParams>) {
     });
 
     let m = 1000;
-    let c = 125;
-    let k = 15;
+    let c = 30;
+    let k = 16;
     let sketch_params = Arc::new(SketchParams::new(m, c, k, false, false));
     return (cmd_params, sketch_params);
 }
 
 fn main() -> io::Result<()> {
     let matches = Command::new("ANI Computation")
-        .about("Computing average nucleotide identity between reference and query genomes via sparse kmer chaining")
-        .arg(arg!(--"query_list" <FILE> "A file containing a list of query genome paths")
+    .about("Computing average nucleotide identity between reference and query genomes via sparse kmer chaining")
+    .arg(
+        Arg::new("query_list")
+            .short('q')
+            .long("ql")
+            .value_name("FILE")
+            .help("A file containing a list of query genome paths")
             .required(true)
-            .action(ArgAction::Set))
-        .arg(arg!(--"ref_list" <FILE> "A file containing a list of reference genome paths")
+            .value_parser(clap::value_parser!(String))
+    )
+    .arg(
+        Arg::new("ref_list")
+            .short('r')
+            .long("rl")
+            .value_name("FILE")
+            .help("A file containing a list of reference genome paths")
             .required(true)
-            .action(ArgAction::Set))
-        .arg(arg!(--"output" <FILE> "Output file to write results")
+            .value_parser(clap::value_parser!(String))
+    )
+    .arg(
+        Arg::new("output")
+            .short('o')
+            .long("output")
+            .value_name("FILE")
+            .help("Output file to write results")
             .required(true)
-            .action(ArgAction::Set))
-        .get_matches();
+            .value_parser(clap::value_parser!(String))
+    )
+    .get_matches();
 
     let query_file_path = matches.get_one::<String>("query_list").unwrap();
     let ref_file_path = matches.get_one::<String>("ref_list").unwrap();
